@@ -111,23 +111,24 @@ def del_from_N_to_end(input_jason):
 
 # add rom filename to item in json_lists
 def add_rom_name_to_json_lists(json_lists):
-    add_romname_dict
+    add_rom_names_dict_lists = []
     for dict_list in json_lists:
         retails_list = RetailsList(dict_list)
-        add_romname_dict = retails_list.get_dict_with_rom_name()
+        added_rom_name_dict = retails_list.get_dict_with_rom_name()
+        add_rom_names_dict_lists.append(added_rom_name_dict)
 
-# for each in data:
-#     if each['id'] == your_id:
-#         print each['abstract']
+    return add_rom_names_dict_lists
+
 
 # 输入('s1945.zip', 3) 给出重复列表
 def get_list_by_repeat_filename(repeat_file_name_and_count, json_lists=get_json_lists()):
     # print(repeat_file_name_and_count)
-    json_lists_add_romname = add_rom_name_to_json_lists(json_lists)
+    json_lists_add_rom_name = add_rom_name_to_json_lists(json_lists)
     # for each in repeat_file_name_and_count:
     #     if each['id'] == your_id:
     #         print
     #         each['abstract']
+
 
 # with open("./record.json", "w") as dump_f:
 #  json.dump(load_dict, dump_f)
