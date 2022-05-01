@@ -1,16 +1,20 @@
 import os
 import json
+from json import JSONDecodeError
+
 from RetailsList import RetailsList
 from collections import Counter  # 引入Counter
 
 # workpath = "i:/"
-work_path = "e:/temp/"
-rom_path = work_path + "/rom"
+WORK_PATH = "e:/temp/"
+SUCCESS = 1
+FAIL = 0
+rom_path = WORK_PATH + "/rom"
 # thumbnail = "I:/retroarch/thumbnail"
 thumbnailPath = "d://thumbnail/"
 # playlists = "I:/retroarch/playlists"
 play_list_name = "playlists/"
-playlistsPath = work_path + play_list_name
+playlistsPath = WORK_PATH + play_list_name
 
 
 # 遍历目录，获取路径下所有文件
@@ -44,11 +48,22 @@ def append_path_to_filename(names):
 
 # 打开单个lpl文件查找重复首字段内容
 def find_repeat_in_lpl_file(filepath=playlistsPath + "MAME.lpl"):
-    json_lists = get_json_lists(filepath)
-    filename_lists = []  # 重复的文件名列表
-    repeat_directory = get_repeat_list_and_count(filename_lists, json_lists)
-    # print(filename_lists) #重复文件列表
-    return repeat_directory
+    try:
+        json_lists = get_json_lists(filepath)
+        filename_lists = []  # 重复的文件名列表
+        repeat_directory = get_repeat_list_and_count(filename_lists, json_lists)
+        # print(filename_lists) #重复文件列表
+    except FileNotFoundError:
+        print('无法打开指定的文件!')
+        return None
+    except LookupError:
+        print('指定了未知的编码!')
+        return None
+    except JSONDecodeError:
+        print("%s文件格式不正确" % filepath)
+        return None
+    else:
+        return repeat_directory
     # json.loads(string)['code']取code值的方法
     # for key in pure_load_f:
     #  print('======key========:' + key + "************value******" + key)
@@ -64,7 +79,7 @@ def get_json_lists(filepath=playlistsPath + "MAME.lpl"):
 # 获取重复文件名和重复的数量
 def get_repeat_list_and_count(filename_lists, json_lists):
     for dict_list in json_lists:
-        print(dict_list)  # 显示每条列表
+        # print(dict_list)  # 显示每条列表可随时注释
         # 生成一个RetailsList类的实例
         retails_list = RetailsList(dict_list)
         path = retails_list.get_path()
@@ -90,8 +105,19 @@ def find_repeat_name_in_lists(lists):
 
 # 打开文件去掉前面不需要信息，获取纯内容
 def open_file_get_pure_json(file_path):
-    with open(file_path, 'rb') as load_f:
-        load_dict = json.load(load_f)
+    try:
+        with open(file_path, 'rb') as load_f:
+            load_dict = json.load(load_f)
+    except FileNotFoundError:
+        print('无法打开指定的文件!')
+        return None
+    except LookupError:
+        print('指定了未知的编码!')
+        return None
+    except UnicodeDecodeError:
+        print('读取文件时解码错误!')
+        return None
+    else:
         pure_load_f = del_from_N_to_end(load_dict)
         return pure_load_f
 
@@ -109,7 +135,7 @@ def del_from_N_to_end(input_jason):
     return sub_input_string
 
 
-# add rom filename to item in json_lists
+# add rom filename to item in json_lists 这个方法没有用
 def add_rom_name_to_json_lists(json_lists):
     add_rom_names_dict_lists = []
     for dict_list in json_lists:
@@ -120,26 +146,42 @@ def add_rom_name_to_json_lists(json_lists):
     return add_rom_names_dict_lists
 
 
-# 输入('s1945.zip', 3) 给出重复列表
-def get_list_by_repeat_filename(repeat_file_name_and_count, json_lists=get_json_lists()):
-    # print(repeat_file_name_and_count)
-    json_lists_add_rom_name = add_rom_name_to_json_lists(json_lists)
-    # for each in repeat_file_name_and_count:
-    #     if each['id'] == your_id:
-    #         print
-    #         each['abstract']
+# 输入('s1945.zip') 给出重复列表
+def get_repeat_paths_by_rom_name(rom_name, json_lists=get_json_lists()):
+    output_repeat_paths = []
+    add_rom_names_dict_lists = add_rom_name_to_json_lists(json_lists)
+    for dict_list in add_rom_names_dict_lists:
+        if dict_list['rom_name'] == rom_name:
+            output_repeat_paths.append(dict_list['path'])
+    return output_repeat_paths
 
 
-# with open("./record.json", "w") as dump_f:
-#  json.dump(load_dict, dump_f)
-# return "success"
-print("获取所有列表：")
-print(get_file_lists(playlistsPath))
+# Move file to temp dir
+def move_delete_rom_to_temp_dir(filepath, makedir='./temp'):
+    if not os.path.isabs(filepath):#不是绝对路径
+        filepath = WORK_PATH[:-1] + filepath
+
+    return SUCCESS
+
+
+
+# 用户菜单
+print("获取目录下所有文件列表：")
+file_lists = get_file_lists(playlistsPath)
+print(file_lists)
 print("获取重复文件名和重复文件数量列表:")
-repeat_directory = find_repeat_in_lpl_file()
-print(repeat_directory)
-print("当前列表为：")
-get_json_lists = get_json_lists()
-print(get_json_lists)
-for item in repeat_directory.items():
-    get_list_by_repeat_filename(item, get_json_lists)
+for file_path_name in file_lists:
+    repeat_directory = find_repeat_in_lpl_file(file_path_name)
+    if repeat_directory is None:
+        continue
+    print("\n%s中的重复文件名:\n" % file_path_name)
+    for key, value in repeat_directory.items():
+        print("{0}，重复次数：{1}".format(key, value))
+    print("当前列表为：")
+    get_json_lists = get_json_lists(file_path_name)
+    print(get_json_lists)
+    repeat_paths_by_rom_name = []
+    for key, value in repeat_directory.items():
+        repeat_paths_by_rom_name.append(get_repeat_paths_by_rom_name(key, get_json_lists))
+    print("\n重复文件路径为：\n")
+    print(repeat_paths_by_rom_name)
