@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 from json import JSONDecodeError
 
 from RetailsList import RetailsList
@@ -116,9 +117,11 @@ def open_file_get_pure_json(file_path):
         return None
     except UnicodeDecodeError:
         print('读取文件时解码错误!')
+        load_f.close()
         return None
     else:
         pure_load_f = del_from_N_to_end(load_dict)
+        load_f.close()
         return pure_load_f
 
 
@@ -157,13 +160,51 @@ def get_repeat_paths_by_rom_name(rom_name, json_lists=get_json_lists()):
 
 
 # Move file to temp dir
-def move_delete_rom_to_temp_dir(filepath, makedir='./temp'):
-    if not os.path.isabs(filepath):#不是绝对路径
+def move_delete_rom_to_temp_dir(filepath, makedir='filetodelete'):
+    if not os.path.exists(filepath):  # 不是绝对路径
         filepath = WORK_PATH[:-1] + filepath
-
+    if not os.path.exists(filepath):  # 是绝对路径还找不到出错
+        print("所提供路径{0}没有文件！".format(filepath))
+        return FAIL
+    file_to_delete_path = WORK_PATH + makedir
+    if not os.path.exists(file_to_delete_path):
+        os.mkdir(file_to_delete_path)
+    # 在file to delete path   下存在文件就直接删除
+    del_full_path_with_filename = file_to_delete_path + '/' + os.path.basename(filepath)
+    if os.path.isfile(del_full_path_with_filename):  # 已经存在文件
+        os.remove(filepath)
+        print("Success, 在{1}目录已经存在文件，{0}删除成功！".format(filepath, file_to_delete_path))
+    else:
+        shutil.move(filepath, file_to_delete_path)
+        print("Success, 移动文件{0}   到  {1}成功！".format(filepath, file_to_delete_path))
     return SUCCESS
 
 
+def move_dup_roms_to_temp_dir(dir_to_delete='', repeat_paths_by_rom_name=[]):
+    if dir_to_delete == '':
+        dir_to_delete = 'filetodelete'
+    count = 0
+    successed = 0
+    for rom_repeat_pairs in repeat_paths_by_rom_name:
+        for i in range(1, len(rom_repeat_pairs)):  # 保留重复列表的第一个元素从第二个元素开始删除
+            # file_path_name_to_del
+            # print(i, rom_repeat_pairs[i])
+            count = count + move_delete_rom_to_temp_dir(rom_repeat_pairs[i], dir_to_delete)
+            successed = successed + 1
+    print('\n等待删除的文件移动到了{0}目录，共{2}个文件在重复列表中，移动成功了{1}个文件。'.format(dir_to_delete, count, successed))
+
+
+# 备份当前lpl文件
+def bak_file(bak_file_path):
+    filename = os.path.dirname(bak_file_path)
+    if os.path.exists(bak_file_path) is False:
+        print("没有此文件！")
+        return FAIL
+    copy_filename = filename + '.bak'
+    copy_file_path = os.path.dirname(bak_file_path) +'/'+ copy_filename
+    shutil.copyfile(bak_file_path, copy_file_path)  # oldfile和newfile都只能是文件
+    print("备份文件{0}成功".format(copy_file_path))
+    return SUCCESS
 
 # 用户菜单
 print("获取目录下所有文件列表：")
@@ -174,6 +215,7 @@ for file_path_name in file_lists:
     repeat_directory = find_repeat_in_lpl_file(file_path_name)
     if repeat_directory is None:
         continue
+
     print("\n%s中的重复文件名:\n" % file_path_name)
     for key, value in repeat_directory.items():
         print("{0}，重复次数：{1}".format(key, value))
@@ -185,3 +227,5 @@ for file_path_name in file_lists:
         repeat_paths_by_rom_name.append(get_repeat_paths_by_rom_name(key, get_json_lists))
     print("\n重复文件路径为：\n")
     print(repeat_paths_by_rom_name)
+    # dir_to_delete = input("请输入要新建的目录用来存放删除的roms(缺省为./filetodelete):")
+    move_dup_roms_to_temp_dir('', repeat_paths_by_rom_name)  # 第一个参数可以改为用户输入时选择的dir_to_delete值

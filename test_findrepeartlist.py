@@ -1,7 +1,8 @@
 import os
 import unittest
 from unittest import TestCase
-from findrepeartlist import add_rom_name_to_json_lists, get_repeat_paths_by_rom_name, move_delete_rom_to_temp_dir
+from findrepeartlist import add_rom_name_to_json_lists, get_repeat_paths_by_rom_name, move_delete_rom_to_temp_dir, \
+    bak_file
 
 
 class Test(TestCase):
@@ -74,12 +75,27 @@ class Test(TestCase):
 
     if __name__ == '__main__':
         unittest.main()
-
+#
     def test_move_delete_rom_to_temp_dir(self):
         path_name = 'e:/temp/rom/s1945.zip'
         inputdir = '/rom/s1945.zip'
-        temp_dir = 'e:/temp/filetodelete/'
-        success_or_failed = move_delete_rom_to_temp_dir(inputdir)
+        temp_dir = 'e:/temp/filetodelete/s1945.zip'
+        if not os.path.exists(path_name):
+            open(path_name, 'w+').close()
+        success_or_failed = move_delete_rom_to_temp_dir(inputdir, 'filetodelete')
         deleted = not os.path.isfile(path_name)
         moved = os.path.isfile(temp_dir)
         self.assertTrue(deleted and moved and success_or_failed == 1)
+
+    def test_bak_file_not_exist(self):
+        path = 'e:/rom/s1945.zip'
+        exist_bak_file = not os.path.exists("e:/rom/s1945.zip.bak")
+        self.assertTrue(exist_bak_file and not bak_file(path))
+    def test_bak_file_existed(self):
+        path_name = 'e:/rom/s1945.zip'
+        if not os.path.exists(path_name):
+            open(path_name, 'w+').close()
+        if os.path.exists(path_name+'.bak'):
+            os.remove(path_name+'.bak')
+        exist_bak_file = os.path.exists("e:/rom/s1945.zip.bak")
+        self.assertEqual(exist_bak_file,bak_file(path_name))

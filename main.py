@@ -19,5 +19,9 @@ retails_list = RetailsList(test_dict)
 
 dict_with_rom_name = retails_list.get_dict_with_rom_name()
 print(dict_with_rom_name)
-
-print(retails_list.get_path_by_filename("outzone.zip"))
+# print(retails_list.get_path_by_filename("outzone.zip")
+tinydict = {'Name': 'Zara', 'Age': 7, 'Class': 'First'}
+del tinydict['Name']# 删除键是'Name'的条目
+tinydict.clear()# 清空字典所有条目
+if len(tinydict) ==0:
+    print("空")
