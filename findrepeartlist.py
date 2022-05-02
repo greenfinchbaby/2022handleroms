@@ -196,36 +196,42 @@ def move_dup_roms_to_temp_dir(dir_to_delete='', repeat_paths_by_rom_name=[]):
 
 # 备份当前lpl文件
 def bak_file(bak_file_path):
-    filename = os.path.dirname(bak_file_path)
+    dir_name = os.path.dirname(bak_file_path)
     if os.path.exists(bak_file_path) is False:
         print("没有此文件！")
         return FAIL
-    copy_filename = filename + '.bak'
-    copy_file_path = os.path.dirname(bak_file_path) +'/'+ copy_filename
+    copy_filename = bak_file_path + '.bak'
+    copy_file_path = copy_filename
     shutil.copyfile(bak_file_path, copy_file_path)  # oldfile和newfile都只能是文件
     print("备份文件{0}成功".format(copy_file_path))
     return SUCCESS
 
-# 用户菜单
-print("获取目录下所有文件列表：")
-file_lists = get_file_lists(playlistsPath)
-print(file_lists)
-print("获取重复文件名和重复文件数量列表:")
-for file_path_name in file_lists:
-    repeat_directory = find_repeat_in_lpl_file(file_path_name)
-    if repeat_directory is None:
-        continue
 
-    print("\n%s中的重复文件名:\n" % file_path_name)
-    for key, value in repeat_directory.items():
-        print("{0}，重复次数：{1}".format(key, value))
-    print("当前列表为：")
-    get_json_lists = get_json_lists(file_path_name)
-    print(get_json_lists)
-    repeat_paths_by_rom_name = []
-    for key, value in repeat_directory.items():
-        repeat_paths_by_rom_name.append(get_repeat_paths_by_rom_name(key, get_json_lists))
-    print("\n重复文件路径为：\n")
-    print(repeat_paths_by_rom_name)
-    # dir_to_delete = input("请输入要新建的目录用来存放删除的roms(缺省为./filetodelete):")
-    move_dup_roms_to_temp_dir('', repeat_paths_by_rom_name)  # 第一个参数可以改为用户输入时选择的dir_to_delete值
+def menu_main():
+    global get_json_lists
+    # 用户菜单
+    print("获取目录下所有文件列表：")
+    file_lists = get_file_lists(playlistsPath)
+    print(file_lists)
+    print("获取重复文件名和重复文件数量列表:")
+    for file_path_name in file_lists:
+        repeat_directory = find_repeat_in_lpl_file(file_path_name)
+        if repeat_directory is None:
+            continue
+
+        print("\n%s中的重复文件名:\n" % file_path_name)
+        for key, value in repeat_directory.items():
+            print("{0}，重复次数：{1}".format(key, value))
+        print("当前列表为：")
+        get_json_lists = get_json_lists(file_path_name)
+        print(get_json_lists)
+        repeat_paths_by_rom_name = []
+        for key, value in repeat_directory.items():
+            repeat_paths_by_rom_name.append(get_repeat_paths_by_rom_name(key, get_json_lists))
+        print("\n重复文件路径为：\n")
+        print(repeat_paths_by_rom_name)
+        # dir_to_delete = input("请输入要新建的目录用来存放删除的roms(缺省为./filetodelete):")
+        move_dup_roms_to_temp_dir('', repeat_paths_by_rom_name)  # 第一个参数可以改为用户输入时选择的dir_to_delete值
+
+
+menu_main()

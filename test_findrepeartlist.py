@@ -91,11 +91,16 @@ class Test(TestCase):
         path = 'e:/rom/s1945.zip'
         exist_bak_file = not os.path.exists("e:/rom/s1945.zip.bak")
         self.assertTrue(exist_bak_file and not bak_file(path))
+
+    #测试会把之前所有测试的操作，包括新建文件等内容都恢复成原来的样子
     def test_bak_file_existed(self):
-        path_name = 'e:/rom/s1945.zip'
+        path_name = 'e:/temp/rom/s1945.zip'
         if not os.path.exists(path_name):
             open(path_name, 'w+').close()
         if os.path.exists(path_name+'.bak'):
             os.remove(path_name+'.bak')
-        exist_bak_file = os.path.exists("e:/rom/s1945.zip.bak")
-        self.assertEqual(exist_bak_file,bak_file(path_name))
+        bak_success = bak_file(path_name)
+        exist_bak_file = os.path.exists("e:/temp/rom/s1945.zip.bak")
+        exist_previous_file = os.path.exists("e:/temp/rom/s1945.zip")
+
+        self.assertEqual(exist_bak_file and exist_previous_file,bak_success)
