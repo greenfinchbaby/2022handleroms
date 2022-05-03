@@ -3,6 +3,8 @@ import json
 import shutil
 from json import JSONDecodeError
 
+import jsonpath as jsonpath
+
 from RetailsList import RetailsList
 from collections import Counter  # 引入Counter
 
@@ -70,11 +72,16 @@ def find_repeat_in_lpl_file(filepath=playlistsPath + "MAME.lpl"):
     #  print('======key========:' + key + "************value******" + key)
 
 
-# 获取无前缀json
-def get_json_lists(filepath=playlistsPath + "MAME.lpl"):
-    pure_lists = open_file_get_pure_json(filepath)
-    json_lists = json.loads(pure_lists)
-    return json_lists
+# 获取无前缀json如果第二个参数为'fulllist'则输出完整json，否则输出为item:下面的json
+def get_json_lists(filepath=playlistsPath + "MAME.lpl", *json_type):
+    full_json_lists = open_file_get_pure_json(filepath)
+    # json_lists = json.loads(pure_lists)
+    pure_lists = del_from_n_to_end_return_item_json(full_json_lists)
+    for varib in json_type:
+        if varib == 1:
+            return full_json_lists
+    else:
+        return pure_lists
 
 
 # 获取重复文件名和重复的数量
@@ -105,7 +112,7 @@ def find_repeat_name_in_lists(lists):
 
 
 # 打开文件去掉前面不需要信息，获取纯内容
-def open_file_get_pure_json(file_path):
+def open_file_get_pure_json(file_path, *json_type):  # 返回的json类型1，
     try:
         with open(file_path, 'rb') as load_f:
             load_dict = json.load(load_f)
@@ -120,22 +127,19 @@ def open_file_get_pure_json(file_path):
         load_f.close()
         return None
     else:
-        pure_load_f = del_from_N_to_end(load_dict)
+
         load_f.close()
-        return pure_load_f
+        return load_dict
 
 
 # 截取掉前面多余部分{'version': '1.4', 'default_core_path': '', 'default_core_name': '', 'label_display_mode': 0,
 # 'right_thumbnail_mode': 0, 'left_thumbnail_mode': 0, 'sort_mode': 0, 'items':
-def del_from_N_to_end(input_jason):
+def del_from_n_to_end_return_item_json(input_jason):
     # jason文件转为字符串
-    input_string = json.dumps(input_jason)
-    length = len(
-        "{'version': '1.4', 'default_core_path': '', 'default_core_name': '', 'label_display_mode': 0, "
-        "'right_thumbnail_mode': 0, 'left_thumbnail_mode': 0, 'sort_mode': 0, 'items':{")
-    sub_input_string = input_string[length:-1]
-    # print(sub_input_string)
-    return sub_input_string
+    sub_input_string = jsonpath.jsonpath(input_jason, '$..{key_name}'.format(key_name='items'))
+    for return_jason in sub_input_string:  # sub_input_string为二维列表，进行降维处理
+        ret_json = return_jason
+    return ret_json
 
 
 # add rom filename to item in json_lists 这个方法没有用
@@ -202,13 +206,37 @@ def bak_file(bak_file_path):
         return FAIL
     copy_filename = bak_file_path + '.bak'
     copy_file_path = copy_filename
-    shutil.copyfile(bak_file_path, copy_file_path)  # oldfile和newfile都只能是文件
-    print("备份文件{0}成功".format(copy_file_path))
+    if not os.path.exists(copy_file_path):
+        shutil.copyfile(bak_file_path, copy_file_path)  # oldfile和newfile都只能是文件
+        print("备份文件{0}成功".format(copy_file_path))
+    else:
+        print("备份文件{0}已经存在".format(copy_file_path))
     return SUCCESS
 
 
+# 给定json文件，和重复文件路径返回json
+def del_dup_lists_in_pure_json(jason_lists, repeat_paths, start=0):
+    deleted_json = []
+    for each_dict_list in jason_lists:
+        if each_dict_list['path'] not in repeat_paths[start:]:  # 从删除列表start开始删除
+            deleted_json.append(each_dict_list)
+    return deleted_json
+
+
+# writing
+
+# ["/ROM/MAME/003/s1945.zip", "/roms/s1945.zip"]列表中的所有文件为待删除文件名
+# 输入为：[['/ROM/MAME/001/gunbird.zip', '/rom/MAME/Gun Bird 1/gunbird.zip'], ['/ROM/MAME/003/s1945.zip', '/roms/s1945.zip', '/rom/MAME/Strikers 1945/s1945.zip']
+def chang_to_del_names(repeat_paths_by_rom_name):
+    to_del_names = []
+    for rom_repeat_pairs in repeat_paths_by_rom_name:
+        for i in range(1, len(rom_repeat_pairs)):  # 保留重复列表的第一个元素从第二个元素开始删除
+            to_del_names.append(rom_repeat_pairs[i])
+    return to_del_names
+
+
 def menu_main():
-    global get_json_lists
+    global got_pure_json_lists
     # 用户菜单
     print("获取目录下所有文件列表：")
     file_lists = get_file_lists(playlistsPath)
@@ -218,20 +246,34 @@ def menu_main():
         repeat_directory = find_repeat_in_lpl_file(file_path_name)
         if repeat_directory is None:
             continue
-
+        # 如果file_path_name为.bak文件就跳过
+        if os.path.splitext(file_path_name)[-1] == ".bak":
+            continue
         print("\n%s中的重复文件名:\n" % file_path_name)
         for key, value in repeat_directory.items():
             print("{0}，重复次数：{1}".format(key, value))
         print("当前列表为：")
-        get_json_lists = get_json_lists(file_path_name)
-        print(get_json_lists)
+        got_pure_json_lists = get_json_lists(file_path_name)
+        print(got_pure_json_lists)
+        print("当前列表条数：{0}条".format(len(got_pure_json_lists)))
         repeat_paths_by_rom_name = []
         for key, value in repeat_directory.items():
-            repeat_paths_by_rom_name.append(get_repeat_paths_by_rom_name(key, get_json_lists))
+            repeat_paths_by_rom_name.append(get_repeat_paths_by_rom_name(key, got_pure_json_lists))
         print("\n重复文件路径为：\n")
         print(repeat_paths_by_rom_name)
         # dir_to_delete = input("请输入要新建的目录用来存放删除的roms(缺省为./filetodelete):")
         move_dup_roms_to_temp_dir('', repeat_paths_by_rom_name)  # 第一个参数可以改为用户输入时选择的dir_to_delete值
+        # 备份当前文件
+        print("\n备份LPL文件：")
+        if bak_file(file_path_name) == SUCCESS:
+            # 删除当前LPL文件的重复条目
+            print("删除当前重复条目:")
+            full_list = get_json_lists(file_path_name, 1)
+            to_del_names = chang_to_del_names(repeat_paths_by_rom_name)
+            deleted_dup_items_json_list = del_dup_lists_in_pure_json(got_pure_json_lists, to_del_names)
+            print(deleted_dup_items_json_list)
+            print("当前列表条数：{0}条".format(len(deleted_dup_items_json_list)))
 
 
-menu_main()
+if __name__ == '__main__':
+    menu_main()
