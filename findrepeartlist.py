@@ -72,7 +72,7 @@ def find_repeat_in_lpl_file(filepath=playlistsPath + "MAME.lpl"):
     #  print('======key========:' + key + "************value******" + key)
 
 
-# 获取无前缀json如果第二个参数为'fulllist'则输出完整json，否则输出为item:下面的json
+# 获取无前缀json如果第二个参数为 1 'fulllist'则输出完整json，否则输出为item:下面的json
 def get_json_lists(filepath=playlistsPath + "MAME.lpl", *json_type):
     full_json_lists = open_file_get_pure_json(filepath)
     # json_lists = json.loads(pure_lists)
@@ -235,6 +235,26 @@ def chang_to_del_names(repeat_paths_by_rom_name):
     return to_del_names
 
 
+def update_item_into_jason(input_json, item_value):
+    input_json['items'] = item_value
+    return input_json
+
+
+def write_json_data(dict_input, json_path):
+    # 写入json文件
+    try:
+        with open(json_path, 'w', encoding='utf-8') as r:
+            # 定义为写模式，名称定义为r
+
+            json.dump(dict_input, r, ensure_ascii=False,indent=1)
+            # 将dict写入名称为r的文件中
+    except IOError as error:
+        print(f"出现写入文件异常！：{error}")
+        r.close()
+        # 关闭json写模式
+    print('保存数据完成!')
+
+
 def menu_main():
     global got_pure_json_lists
     # 用户菜单
@@ -248,6 +268,11 @@ def menu_main():
             continue
         # 如果file_path_name为.bak文件就跳过
         if os.path.splitext(file_path_name)[-1] == ".bak":
+            print(f'{file_path_name}为bak文件，跳过！')
+            continue
+
+        if len(repeat_directory) == 0:
+            print(f"{file_path_name}中没有重复文件！")
             continue
         print("\n%s中的重复文件名:\n" % file_path_name)
         for key, value in repeat_directory.items():
@@ -255,7 +280,8 @@ def menu_main():
         print("当前列表为：")
         got_pure_json_lists = get_json_lists(file_path_name)
         print(got_pure_json_lists)
-        print("当前列表条数：{0}条".format(len(got_pure_json_lists)))
+        inital_numbers = len(got_pure_json_lists)
+        print(f"当前列表条数：{inital_numbers}条")
         repeat_paths_by_rom_name = []
         for key, value in repeat_directory.items():
             repeat_paths_by_rom_name.append(get_repeat_paths_by_rom_name(key, got_pure_json_lists))
@@ -271,8 +297,17 @@ def menu_main():
             full_list = get_json_lists(file_path_name, 1)
             to_del_names = chang_to_del_names(repeat_paths_by_rom_name)
             deleted_dup_items_json_list = del_dup_lists_in_pure_json(got_pure_json_lists, to_del_names)
-            print(deleted_dup_items_json_list)
-            print("当前列表条数：{0}条".format(len(deleted_dup_items_json_list)))
+            # print(deleted_dup_items_json_list)
+            after_deleted_list_count = len(deleted_dup_items_json_list)
+            print(f"当前列表条数：{after_deleted_list_count}条")
+            full_list_deleted_dup = full_list
+            full_list_deleted_dup['items'] = deleted_dup_items_json_list
+            deleted_num = inital_numbers - after_deleted_list_count
+            print(f"删除了：{deleted_num}条重复数据！")
+            # 把当前删除完重复条目的列表写入MAME.lpl文件中
+            write_json_data(full_list_deleted_dup, file_path_name)
+        else:
+            print("备份文件失败！")
 
 
 if __name__ == '__main__':

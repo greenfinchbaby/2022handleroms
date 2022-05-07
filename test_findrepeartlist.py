@@ -66,19 +66,9 @@ class Test(TestCase):
                        'crc32': '00000000|crc', 'db_name': 'MAME.lpl'}]
         self.assertEqual(add_rom_names_list, add_rom_name_to_json_lists(json_lists))
 
-    #       def test_first_last_name(self):
-    #           --snip--
-    #
-    #       def test_first_last_middle_name(self):
-    #           """能够正确地处理像Wolfgang Amadeus Mozart这样的姓名吗？"""
-    # ❶         formatted_name = get_formatted_name(
-    #               'wolfgang', 'mozart', 'amadeus')
-    #           self.assertEqual(formatted_name, 'Wolfgang Amadeus Mozart')
-
     if __name__ == '__main__':
         unittest.main()
 
-    #
     def test_move_delete_rom_to_temp_dir(self):
         path_name = 'e:/temp/rom/s1945.zip'
         inputdir = '/rom/s1945.zip'
@@ -286,3 +276,58 @@ class Test(TestCase):
                                     ['/ROM/MAME/003/s1945.zip', '/roms/s1945.zip', '/rom/MAME/Strikers 1945/s1945.zip']]
         to_del_names = ['/rom/MAME/Gun Bird 1/gunbird.zip', '/roms/s1945.zip', '/rom/MAME/Strikers 1945/s1945.zip']
         self.assertEqual(to_del_names, findrepeartlist.chang_to_del_names(repeat_paths_by_rom_name))
+
+    def test_update_item_into_json(self):
+        item_value = [
+            {
+                "path": "/ROM/MAME/001/gunbird.zip",
+                "label": "001 gunbird",
+                "core_path": "/retroarch/cores/fbalpha_libretro_libnx.nro",
+                "core_name": "武装飞鸟 一代",
+                "crc32": "MAME.lpl",
+                "db_name": ""
+            },
+            {
+                "path": "/ROM/MAME/003/s1945.zip",
+                "label": "003 s1945",
+                "core_path": "/retroarch/cores/fbalpha_libretro_libnx.nro",
+                "core_name": "彩京1945 一代",
+                "crc32": "MAME.lpl",
+                "db_name": ""
+            }
+        ]
+
+        input_json = {'version': '1.4', 'default_core_path': '', 'default_core_name': '', 'label_display_mode': 0,
+                  'right_thumbnail_mode': 0, 'left_thumbnail_mode': 0, 'sort_mode': 0, 'items': [
+            {'path': '/ROM/MAME/001/gunbird.zip', 'label': '001 gunbird',
+             'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro', 'core_name': '武装飞鸟 一代',
+             'crc32': 'MAME.lpl', 'db_name': ''}, {'path': '/ROM/MAME/002/atetris.zip', 'label': '002 atetris',
+                                                   'core_path': '/retroarch/cores/mame2003_libretro_libnx.nro',
+                                                   'core_name': '俄罗斯方块 一代', 'crc32': 'MAME.lpl', 'db_name': ''},
+            {'path': '/ROM/MAME/003/s1945.zip', 'label': '003 s1945',
+             'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro', 'core_name': '彩京1945 一代',
+             'crc32': 'MAME.lpl', 'db_name': ''}, {'path': '/ROM/MAME/004/s1945ii.zip', 'label': '004 s1945ii',
+                                                   'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro',
+                                                   'core_name': '彩京1945 二代', 'crc32': 'MAME.lpl', 'db_name': ''}]}
+        updated_json ={'version': '1.4', 'default_core_path': '', 'default_core_name': '', 'label_display_mode': 0,
+                  'right_thumbnail_mode': 0, 'left_thumbnail_mode': 0, 'sort_mode': 0, 'items': [
+                {
+                    "path": "/ROM/MAME/001/gunbird.zip",
+                    "label": "001 gunbird",
+                    "core_path": "/retroarch/cores/fbalpha_libretro_libnx.nro",
+                    "core_name": "武装飞鸟 一代",
+                    "crc32": "MAME.lpl",
+                    "db_name": ""
+                },
+                {
+                    "path": "/ROM/MAME/003/s1945.zip",
+                    "label": "003 s1945",
+                    "core_path": "/retroarch/cores/fbalpha_libretro_libnx.nro",
+                    "core_name": "彩京1945 一代",
+                    "crc32": "MAME.lpl",
+                    "db_name": ""
+                }
+            ]}
+        self.assertEqual(updated_json, findrepeartlist.update_item_into_jason(input_json, item_value))
+    def test_write_json_data(self):
+        pass
