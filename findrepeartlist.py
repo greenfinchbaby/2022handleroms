@@ -8,21 +8,16 @@ import jsonpath as jsonpath
 from RetailsList import RetailsList
 from collections import Counter  # 引入Counter
 
-# workpath = "i:/"
-WORK_PATH = "e:/temp/"
+WORK_PATH = "i:/"
+#WORK_PATH = "e:/temp/"
 SUCCESS = 1
 FAIL = 0
-rom_path = WORK_PATH + "/rom"
-# thumbnail = "I:/retroarch/thumbnail"
-thumbnailPath = "d://thumbnail/"
-# playlists = "I:/retroarch/playlists"
 play_list_name = "playlists/"
 playlistsPath = WORK_PATH + play_list_name
 
 
 # 遍历目录，获取路径下所有文件
 def get_file_lists(filepath=playlistsPath):
-    fileNames = []
     for parent, dir_names, filenames in os.walk(filepath):
         # Case1: traversal the directories
         for dir_name in dir_names:
@@ -90,7 +85,7 @@ def get_repeat_list_and_count(filename_lists, json_lists):
         # print(dict_list)  # 显示每条列表可随时注释
         # 生成一个RetailsList类的实例
         retails_list = RetailsList(dict_list)
-        path = retails_list.get_path()
+        #path = retails_list.get_path()
         filename = retails_list.get_filename()
         filename_lists.append(filename)
     repeat_directory = find_repeat_name_in_lists(filename_lists)
@@ -184,6 +179,7 @@ def move_delete_rom_to_temp_dir(filepath, makedir='filetodelete'):
     return SUCCESS
 
 
+#  保留重复列表的第一个元素从第二个元素开始删除
 def move_dup_roms_to_temp_dir(dir_to_delete='', repeat_paths_by_rom_name=[]):
     if dir_to_delete == '':
         dir_to_delete = 'filetodelete'
@@ -246,13 +242,32 @@ def write_json_data(dict_input, json_path):
         with open(json_path, 'w', encoding='utf-8') as r:
             # 定义为写模式，名称定义为r
 
-            json.dump(dict_input, r, ensure_ascii=False,indent=1)
+            json.dump(dict_input, r, ensure_ascii=False, indent=1)
             # 将dict写入名称为r的文件中
     except IOError as error:
         print(f"出现写入文件异常！：{error}")
         r.close()
         # 关闭json写模式
     print('保存数据完成!')
+
+
+#   列表中的路径同第一个路径重复，则去掉相应路径，如果只存在一个列表则去掉该第一个路径
+def filter_need_to_delete_file(repeat_paths_by_rom_name):
+    filtered_repeat_paths = []
+
+    for rom_repeat_paths in repeat_paths_by_rom_name:
+        a_list_repeat_paths = []
+        for a_file_name in rom_repeat_paths:
+            if a_file_name not in a_list_repeat_paths:
+                a_list_repeat_paths.append(a_file_name)
+            else:
+                print(f"同{[a_file_name]}重名，去除该名无需删除rom文件！")
+        if len(a_list_repeat_paths) != 1:
+            filtered_repeat_paths.append(a_list_repeat_paths)
+        else:
+            print(f"{rom_repeat_paths[0]}文件名唯一无需删除rom文件！")
+
+    return filtered_repeat_paths
 
 
 def menu_main():
@@ -287,8 +302,11 @@ def menu_main():
             repeat_paths_by_rom_name.append(get_repeat_paths_by_rom_name(key, got_pure_json_lists))
         print("\n重复文件路径为：\n")
         print(repeat_paths_by_rom_name)
+        #   在移动重复文件之前需要对重复文件的路径和第一个列表中的路径进行判定，如果相同则不需要移动只需要删除列表即可
+        repeat_paths_need_to_delete_file = filter_need_to_delete_file(repeat_paths_by_rom_name)
+
         # dir_to_delete = input("请输入要新建的目录用来存放删除的roms(缺省为./filetodelete):")
-        move_dup_roms_to_temp_dir('', repeat_paths_by_rom_name)  # 第一个参数可以改为用户输入时选择的dir_to_delete值
+        move_dup_roms_to_temp_dir('', repeat_paths_need_to_delete_file)  # 第一个参数可以改为用户输入时选择的dir_to_delete值
         # 备份当前文件
         print("\n备份LPL文件：")
         if bak_file(file_path_name) == SUCCESS:

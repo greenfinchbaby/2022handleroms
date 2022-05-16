@@ -71,11 +71,11 @@ class Test(TestCase):
 
     def test_move_delete_rom_to_temp_dir(self):
         path_name = 'e:/temp/rom/s1945.zip'
-        inputdir = '/rom/s1945.zip'
+        input_dir = '/rom/s1945.zip'
         temp_dir = 'e:/temp/filetodelete/s1945.zip'
         if not os.path.exists(path_name):
             open(path_name, 'w+').close()
-        success_or_failed = move_delete_rom_to_temp_dir(inputdir, 'filetodelete')
+        success_or_failed = move_delete_rom_to_temp_dir(input_dir, 'filetodelete')
         deleted = not os.path.isfile(path_name)
         moved = os.path.isfile(temp_dir)
         self.assertTrue(deleted and moved and success_or_failed == 1)
@@ -277,6 +277,12 @@ class Test(TestCase):
         to_del_names = ['/rom/MAME/Gun Bird 1/gunbird.zip', '/roms/s1945.zip', '/rom/MAME/Strikers 1945/s1945.zip']
         self.assertEqual(to_del_names, findrepeartlist.chang_to_del_names(repeat_paths_by_rom_name))
 
+    def test_chang_to_del_names_only_one_list(self):
+        repeat_paths_by_rom_name = [['/ROM/MAME/001/gunbird.zip'],
+                                    ['/ROM/MAME/003/s1945.zip', '/roms/s1945.zip', '/rom/MAME/Strikers 1945/s1945.zip']]
+        to_del_names = ['/roms/s1945.zip', '/rom/MAME/Strikers 1945/s1945.zip']
+        self.assertEqual(to_del_names, findrepeartlist.chang_to_del_names(repeat_paths_by_rom_name))
+
     def test_update_item_into_json(self):
         item_value = [
             {
@@ -298,19 +304,19 @@ class Test(TestCase):
         ]
 
         input_json = {'version': '1.4', 'default_core_path': '', 'default_core_name': '', 'label_display_mode': 0,
-                  'right_thumbnail_mode': 0, 'left_thumbnail_mode': 0, 'sort_mode': 0, 'items': [
-            {'path': '/ROM/MAME/001/gunbird.zip', 'label': '001 gunbird',
-             'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro', 'core_name': '武装飞鸟 一代',
-             'crc32': 'MAME.lpl', 'db_name': ''}, {'path': '/ROM/MAME/002/atetris.zip', 'label': '002 atetris',
-                                                   'core_path': '/retroarch/cores/mame2003_libretro_libnx.nro',
-                                                   'core_name': '俄罗斯方块 一代', 'crc32': 'MAME.lpl', 'db_name': ''},
-            {'path': '/ROM/MAME/003/s1945.zip', 'label': '003 s1945',
-             'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro', 'core_name': '彩京1945 一代',
-             'crc32': 'MAME.lpl', 'db_name': ''}, {'path': '/ROM/MAME/004/s1945ii.zip', 'label': '004 s1945ii',
-                                                   'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro',
-                                                   'core_name': '彩京1945 二代', 'crc32': 'MAME.lpl', 'db_name': ''}]}
-        updated_json ={'version': '1.4', 'default_core_path': '', 'default_core_name': '', 'label_display_mode': 0,
-                  'right_thumbnail_mode': 0, 'left_thumbnail_mode': 0, 'sort_mode': 0, 'items': [
+                      'right_thumbnail_mode': 0, 'left_thumbnail_mode': 0, 'sort_mode': 0, 'items': [
+                {'path': '/ROM/MAME/001/gunbird.zip', 'label': '001 gunbird',
+                 'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro', 'core_name': '武装飞鸟 一代',
+                 'crc32': 'MAME.lpl', 'db_name': ''}, {'path': '/ROM/MAME/002/atetris.zip', 'label': '002 atetris',
+                                                       'core_path': '/retroarch/cores/mame2003_libretro_libnx.nro',
+                                                       'core_name': '俄罗斯方块 一代', 'crc32': 'MAME.lpl', 'db_name': ''},
+                {'path': '/ROM/MAME/003/s1945.zip', 'label': '003 s1945',
+                 'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro', 'core_name': '彩京1945 一代',
+                 'crc32': 'MAME.lpl', 'db_name': ''}, {'path': '/ROM/MAME/004/s1945ii.zip', 'label': '004 s1945ii',
+                                                       'core_path': '/retroarch/cores/fbalpha_libretro_libnx.nro',
+                                                       'core_name': '彩京1945 二代', 'crc32': 'MAME.lpl', 'db_name': ''}]}
+        updated_json = {'version': '1.4', 'default_core_path': '', 'default_core_name': '', 'label_display_mode': 0,
+                        'right_thumbnail_mode': 0, 'left_thumbnail_mode': 0, 'sort_mode': 0, 'items': [
                 {
                     "path": "/ROM/MAME/001/gunbird.zip",
                     "label": "001 gunbird",
@@ -329,5 +335,13 @@ class Test(TestCase):
                 }
             ]}
         self.assertEqual(updated_json, findrepeartlist.update_item_into_jason(input_json, item_value))
-    def test_write_json_data(self):
-        pass
+
+    #   测试列表中的文件路径同第一个文件相同则不需要删除该rom文件只需要删除列表即可
+    def test_filter_need_to_delete_file(self):
+        input_list = [['/ROM/MAME/001/gunbird.zip', '/ROM/MAME/001/gunbird.zip'],  # 如果是两个元素相同则都不要
+                      ['/ROM/MAME/003/s1945.zip', '/ROM/MAME/003/s1945.zip', '/rom/MAME/Strikers 1945/s1945.zip'],
+                      ['/ROM/MAME/004/s1945ii.zip', '/roms/s1945ii.zip', '/ROM/MAME/004/s1945ii.zip']]
+
+        output_list = [['/ROM/MAME/003/s1945.zip', '/rom/MAME/Strikers 1945/s1945.zip'],
+                       ['/ROM/MAME/004/s1945ii.zip', '/roms/s1945ii.zip']]
+        self.assertEqual(output_list, findrepeartlist.filter_need_to_delete_file(input_list))
